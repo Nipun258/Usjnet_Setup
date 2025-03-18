@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WiFi Network Detector</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>WiFi Network Detector</h1>
+      <p>Scan for available WiFi networks and view saved profiles</p>
+    </header>
+    
+    <div class="controls">
+      <button id="scan-btn" class="btn primary">Scan for Networks</button>
+      <button id="profiles-btn" class="btn secondary">Show Saved Profiles</button>
+    </div>
+    
+    <div class="loading-indicator" id="loading">
+      <div class="spinner"></div>
+      <p>Scanning for networks...</p>
+    </div>
+    
+    <div class="results-container">
+      <div id="networks-container">
+        <h2>Available Networks</h2>
+        <div id="networks-list" class="list-container"></div>
+      </div>
+      
+      <div id="profiles-container" class="hidden">
+        <h2>Saved Profiles</h2>
+        <div id="profiles-list" class="list-container"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="app.js"></script>
+</body>
+</html>

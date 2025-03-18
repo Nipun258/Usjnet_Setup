@@ -1,0 +1,142 @@
+const express = require('express');
+const cors = require('cors');
+const { exec } = require('child_process');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static('public'));
+
+// API endpoint to get available WiFi networks
+app.get('/api/networks', (req, res) => {
+  exec('netsh wlan show networks mode=Bssid', (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error executing command: ${error}`);
+      return res.status(500).json({ error: 'Failed to retrieve network information' });
+    }
+    
+    if (stderr) {
+      console.error(`Command stderr: ${stderr}`);
+      return res.status(500).json({ error: 'Error in command execution' });
+    }
+    
+    // Parse the output to extract network information
+    const networks = parseNetworkInfo(stdout);
+    res.json({ networks });
+  });
+});
+
+// API endpoint to get saved WiFi profiles
+app.get('/api/profiles', (req, res) => {
+  exec('netsh wlan show profile', (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error executing command: ${error}`);
+      return res.status(500).json({ error: 'Failed to retrieve profile information' });
+    }
+    
+    if (stderr) {
+      console.error(`Command stderr: ${stderr}`);
+      return res.status(500).json({ error: 'Error in command execution' });
+    }
+    
+    // Parse the output to extract profile information
+    const profiles = parseProfileInfo(stdout);
+    res.json({ profiles });
+  });
+});
+
+// API endpoint to delete a WiFi profile
+app.delete('/api/profiles/:profileName', (req, res) => {
+  const profileName = req.params.profileName;
+  
+  exec(`netsh wlan delete profile name="${profileName}"`, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error executing command: ${error}`);
+      return res.status(500).json({ error: 'Failed to delete profile' });
+    }
+    
+    if (stderr) {
+      console.error(`Command stderr: ${stderr}`);
+      return res.status(500).json({ error: 'Error in command execution' });
+    }
+    
+    res.json({ message: `Profile ${profileName} deleted successfully` });
+  });
+});
+
+// API endpoint to get profile details
+app.get('/api/profiles/:profileName/details', (req, res) => {
+  const profileName = req.params.profileName;
+  
+  exec(`netsh wlan show profile name="${profileName}" key=clear`, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error executing command: ${error}`);
+      return res.status(500).json({ error: 'Failed to retrieve profile details' });
+    }
+    
+    if (stderr) {
+      console.error(`Command stderr: ${stderr}`);
+      return res.status(500).json({ error: 'Error in command execution' });
+    }
+    
+    // Parse the output to extract profile details
+    const details = {
+      authentication: stdout.match(/Authentication\s+: (.+)/)?.[1]?.trim() || 'Unknown',
+      encryption: stdout.match(/Cipher\s+: (.+)/)?.[1]?.trim() || 'Unknown',
+      connectionType: stdout.match(/Connection type\s+: (.+)/)?.[1]?.trim() || 'Unknown',
+      radioType: stdout.match(/Radio type\s+: (.+)/)?.[1]?.trim() || 'Unknown'
+    };
+    
+    res.json(details);
+  });
+});
+
+// Function to parse network information from netsh output
+function parseNetworkInfo(output) {
+  const networks = [];
+  const sections = output.split('SSID ');
+  
+  // Skip the first section as it's just the header
+  for (let i = 1; i < sections.length; i++) {
+    const section = sections[i];
+    const ssidMatch = section.match(/\d+ : (.+)/);
+    
+    if (ssidMatch) {
+      const ssid = ssidMatch[1].trim();
+      const signalMatch = section.match(/Signal\s+: (\d+)%/);
+      const securityMatch = section.match(/Authentication\s+: (.+)/);
+      const encryptionMatch = section.match(/Encryption\s+: (.+)/);
+      
+      networks.push({
+        ssid,
+        signal: signalMatch ? signalMatch[1] : 'Unknown',
+        security: securityMatch ? securityMatch[1].trim() : 'Unknown',
+        encryption: encryptionMatch ? encryptionMatch[1].trim() : 'Unknown'
+      });
+    }
+  }
+  
+  return networks;
+}
+
+// Function to parse profile information from netsh output
+function parseProfileInfo(output) {
+  const profiles = [];
+  const lines = output.split('\n');
+  
+  for (const line of lines) {
+    const match = line.match(/All User Profile\s+: (.+)/);
+    if (match) {
+      profiles.push(match[1].trim());
+    }
+  }
+  
+  return profiles;
+}
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
