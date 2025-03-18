@@ -137,6 +137,34 @@ function parseProfileInfo(output) {
   return profiles;
 }
 
+// API endpoint to configure USJNet profile
+app.post('/api/profiles/usjnet/configure', (req, res) => {
+  const xmlPath = 'public/exports/USJNet.xml';
+  
+  // First delete existing profile if it exists
+  exec('netsh wlan delete profile name="USJNet"', (error) => {
+    if (error) {
+      console.error(`Error deleting profile: ${error}`);
+      // Continue even if delete fails (profile might not exist)
+    }
+    
+    // Add the new profile using the XML file
+    exec(`netsh wlan add profile filename="${xmlPath}"`, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error adding profile: ${error}`);
+        return res.status(500).json({ error: 'Failed to configure USJNet profile' });
+      }
+      
+      if (stderr) {
+        console.error(`Command stderr: ${stderr}`);
+        return res.status(500).json({ error: 'Error in command execution' });
+      }
+      
+      res.json({ message: 'USJNet profile configured successfully' });
+    });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

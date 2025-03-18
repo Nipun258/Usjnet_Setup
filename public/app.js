@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // DOM Elements
   const scanBtn = document.getElementById('scan-btn');
   const profilesBtn = document.getElementById('profiles-btn');
+  const setupBtn = document.getElementById('setup-btn');
   const loadingIndicator = document.getElementById('loading');
   const networksContainer = document.getElementById('networks-container');
   const profilesContainer = document.getElementById('profiles-container');
@@ -11,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Event Listeners
   scanBtn.addEventListener('click', scanNetworks);
   profilesBtn.addEventListener('click', showProfiles);
+  setupBtn.addEventListener('click', setupUSJNet);
   
   // Function to scan for available networks
   async function scanNetworks() {
@@ -240,6 +242,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     return `<span class="signal-strength" title="Signal Strength: ${signal}%">${bars}</span>`;
+  }
+  
+  // Function to setup USJNet profile
+  async function setupUSJNet() {
+    try {
+      // Show loading indicator
+      loadingIndicator.style.display = 'flex';
+      loadingIndicator.querySelector('p').textContent = 'Configuring USJNet profile...';
+      
+      // Configure USJNet profile
+      const response = await fetch('/api/profiles/usjnet/configure', {
+        method: 'POST'
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to configure USJNet profile');
+      }
+      
+      // Hide loading indicator
+      loadingIndicator.style.display = 'none';
+      
+      // Show success message
+      alert('USJNet profile configured successfully!');
+      
+      // Refresh profiles list
+      showProfiles();
+    } catch (error) {
+      console.error('Error configuring USJNet profile:', error);
+      loadingIndicator.style.display = 'none';
+      alert(error.message || 'Failed to configure USJNet profile');
+    }
   }
   
   // Automatically scan for networks when the page loads
