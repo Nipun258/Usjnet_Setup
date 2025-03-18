@@ -262,8 +262,18 @@ document.addEventListener('DOMContentLoaded', () => {
               if (!response.ok) throw new Error(data.error);
 
               showToast(data.message, 'success');
+              // Reset button states and switch to connected tab
+              resetButtonStates();
+              connectedBtn.classList.remove('secondary');
+              connectedBtn.classList.add('primary');
+              // Hide all containers first
+              document.querySelectorAll('.results-container > div').forEach(container => {
+                container.classList.add('hidden');
+              });
+              networksContainer.classList.add('hidden');
+              profilesContainer.classList.add('hidden');
+              document.getElementById('connected-container').classList.remove('hidden');
               await showConnectedNetwork();
-              await scanNetworks();
             } catch (error) {
               console.error('Error connecting to network:', error);
               showToast(error.message || 'Failed to connect to network', 'error');
@@ -478,35 +488,40 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Function to setup USJNet profile
   async function setupUSJNet() {
-    try {
-      // Show loading indicator
-      loadingIndicator.style.display = 'flex';
-      loadingIndicator.querySelector('p').textContent = 'Configuring USJNet profile...';
-      
-      // Configure USJNet profile
-      const response = await fetch('/api/profiles/usjnet/configure', {
-        method: 'POST'
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to configure USJNet profile');
-      }
-      
-      // Hide loading indicator
-      loadingIndicator.style.display = 'none';
-      
-      // Show success message
-      showToast('USJNet profile configured successfully!');
-      
-      // Refresh profiles list
-      showProfiles();
-    } catch (error) {
-      console.error('Error configuring USJNet profile:', error);
-      loadingIndicator.style.display = 'none';
-      showToast(error.message || 'Failed to configure USJNet profile', 'error');
-    }
+    showToast('Do you want to configure the USJNet profile?', 'warning', {
+      'Confirm': async () => {
+        try {
+          // Show loading indicator
+          loadingIndicator.style.display = 'flex';
+          loadingIndicator.querySelector('p').textContent = 'Configuring USJNet profile...';
+          
+          // Configure USJNet profile
+          const response = await fetch('/api/profiles/usjnet/configure', {
+            method: 'POST'
+          });
+          
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to configure USJNet profile');
+          }
+          
+          // Hide loading indicator
+          loadingIndicator.style.display = 'none';
+          
+          // Show success message
+          showToast('USJNet profile configured successfully!');
+          
+          // Refresh profiles list
+          showProfiles();
+        } catch (error) {
+          console.error('Error configuring USJNet profile:', error);
+          loadingIndicator.style.display = 'none';
+          showToast(error.message || 'Failed to configure USJNet profile', 'error');
+        }
+      },
+      'Cancel': () => {}
+    });
   }
   
   // Networks are now scanned automatically with showConnectedNetwork
