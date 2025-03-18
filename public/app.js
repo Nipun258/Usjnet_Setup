@@ -48,13 +48,44 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   // Event Listeners
-  scanBtn.addEventListener('click', scanNetworks);
-  profilesBtn.addEventListener('click', showProfiles);
-  setupBtn.addEventListener('click', setupUSJNet);
-  connectedBtn.addEventListener('click', showConnectedNetwork);
+  scanBtn.addEventListener('click', () => {
+    resetButtonStates();
+    scanBtn.classList.remove('secondary');
+    scanBtn.classList.add('primary');
+    scanNetworks();
+  });
 
-  // Show connected network and available networks on initial load
+  profilesBtn.addEventListener('click', () => {
+    resetButtonStates();
+    profilesBtn.classList.remove('secondary');
+    profilesBtn.classList.add('primary');
+    showProfiles();
+  });
+
+  setupBtn.addEventListener('click', () => {
+    resetButtonStates();
+    setupBtn.classList.remove('secondary');
+    setupBtn.classList.add('primary');
+    setupUSJNet();
+  });
+
+  connectedBtn.addEventListener('click', () => {
+    resetButtonStates();
+    connectedBtn.classList.remove('secondary');
+    connectedBtn.classList.add('primary');
+    showConnectedNetwork();
+  });
+
+  function resetButtonStates() {
+    [scanBtn, profilesBtn, setupBtn, connectedBtn].forEach(btn => {
+      btn.classList.remove('primary');
+      btn.classList.add('secondary');
+    });
+  }
+
+  // Show connected network on initial load
   showConnectedNetwork();
+  resetButtonStates();
   connectedBtn.classList.remove('secondary');
   connectedBtn.classList.add('primary');
   scanBtn.classList.remove('primary');
@@ -69,6 +100,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Function to show connected network
   async function showConnectedNetwork() {
     try {
+      networksContainer.classList.add('hidden');
+      profilesContainer.classList.add('hidden');
+      document.getElementById('connected-container').classList.remove('hidden');
+      
       // Show loading indicator
       loadingIndicator.style.display = 'flex';
       loadingIndicator.querySelector('p').textContent = 'Getting connected network...';
@@ -107,7 +142,35 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="network-detail">Encryption: ${data.encryption}</span>
             <span class="network-detail">State: ${data.state}</span>
           </div>
+          <div class="network-actions">
+            <button class="btn disconnect-btn">Disconnect</button>
+          </div>
         `;
+
+        // Add event listener for disconnect button
+        const disconnectBtn = networkItem.querySelector('.disconnect-btn');
+        disconnectBtn.addEventListener('click', async () => {
+          try {
+            loadingIndicator.style.display = 'flex';
+            loadingIndicator.querySelector('p').textContent = 'Disconnecting from network...';
+
+            const response = await fetch('/api/networks/disconnect', {
+              method: 'POST'
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+
+            showToast(data.message, 'success');
+            await showConnectedNetwork();
+            await scanNetworks();
+          } catch (error) {
+            console.error('Error disconnecting from network:', error);
+            showToast(error.message || 'Failed to disconnect from network', 'error');
+          } finally {
+            loadingIndicator.style.display = 'none';
+          }
+        });
         
         connectedNetworkDiv.appendChild(networkItem);
       } else {
@@ -142,6 +205,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // Clear previous results
       networksList.innerHTML = '';
       
+      // Fetch connected network first
+      const connectedResponse = await fetch('/api/networks/connected');
+      const connectedData = await connectedResponse.json();
+      const connectedSSID = connectedData.connected ? connectedData.ssid : null;
+      
       // Fetch networks from API
       const response = await fetch('/api/networks');
       const data = await response.json();
@@ -155,7 +223,15 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Display networks
       if (data.networks && data.networks.length > 0) {
-        data.networks.forEach(network => {
+        // Filter out the connected network
+        const availableNetworks = data.networks.filter(network => network.ssid !== connectedSSID);
+        
+        if (availableNetworks.length === 0) {
+          networksList.innerHTML = '<p>No other networks available</p>';
+          return;
+        }
+        
+        availableNetworks.forEach(network => {
           const networkItem = document.createElement('div');
           networkItem.className = 'network-item';
           
@@ -169,7 +245,37 @@ document.addEventListener('DOMContentLoaded', () => {
               <span class="network-detail">Security: ${network.security}</span>
               <span class="network-detail">Encryption: ${network.encryption}</span>
             </div>
+            <div class="network-actions">
+              <button class="btn connect-btn" data-ssid="${network.ssid}">Connect</button>
+            </div>
           `;
+
+          // Add event listener for connect button
+          const connectBtn = networkItem.querySelector('.connect-btn');
+          connectBtn.addEventListener('click', async () => {
+            try {
+              loadingIndicator.style.display = 'flex';
+              loadingIndicator.querySelector('p').textContent = `Connecting to ${network.ssid}...`;
+
+              const response = await fetch('/api/networks/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ssid: network.ssid })
+              });
+
+              const data = await response.json();
+              if (!response.ok) throw new Error(data.error);
+
+              showToast(data.message, 'success');
+              await showConnectedNetwork();
+              await scanNetworks();
+            } catch (error) {
+              console.error('Error connecting to network:', error);
+              showToast(error.message || 'Failed to connect to network', 'error');
+            } finally {
+              loadingIndicator.style.display = 'none';
+            }
+          });
           
           networksList.appendChild(networkItem);
         });

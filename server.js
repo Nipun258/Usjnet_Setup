@@ -202,6 +202,46 @@ app.get('/api/networks/connected', (req, res) => {
   });
 });
 
+// API endpoint to connect to a WiFi network
+app.post('/api/networks/connect', (req, res) => {
+  const { ssid } = req.body;
+  
+  if (!ssid) {
+    return res.status(400).json({ error: 'SSID is required' });
+  }
+  
+  exec(`netsh wlan connect name="${ssid}"`, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error executing command: ${error}`);
+      return res.status(500).json({ error: 'Failed to connect to network' });
+    }
+    
+    if (stderr) {
+      console.error(`Command stderr: ${stderr}`);
+      return res.status(500).json({ error: 'Error in command execution' });
+    }
+    
+    res.json({ message: `Successfully connected to ${ssid}` });
+  });
+});
+
+// API endpoint to disconnect from current WiFi network
+app.post('/api/networks/disconnect', (req, res) => {
+  exec('netsh wlan disconnect', (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error executing command: ${error}`);
+      return res.status(500).json({ error: 'Failed to disconnect from network' });
+    }
+    
+    if (stderr) {
+      console.error(`Command stderr: ${stderr}`);
+      return res.status(500).json({ error: 'Error in command execution' });
+    }
+    
+    res.json({ message: 'Successfully disconnected from network' });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
