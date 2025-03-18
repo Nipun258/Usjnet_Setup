@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const scanBtn = document.getElementById('scan-btn');
   const profilesBtn = document.getElementById('profiles-btn');
   const setupBtn = document.getElementById('setup-btn');
+  const connectedBtn = document.getElementById('connected-btn');
   const loadingIndicator = document.getElementById('loading');
   const networksContainer = document.getElementById('networks-container');
   const profilesContainer = document.getElementById('profiles-container');
@@ -50,6 +51,81 @@ document.addEventListener('DOMContentLoaded', () => {
   scanBtn.addEventListener('click', scanNetworks);
   profilesBtn.addEventListener('click', showProfiles);
   setupBtn.addEventListener('click', setupUSJNet);
+  connectedBtn.addEventListener('click', showConnectedNetwork);
+
+  // Show connected network and available networks on initial load
+  showConnectedNetwork();
+  connectedBtn.classList.remove('secondary');
+  connectedBtn.classList.add('primary');
+  scanBtn.classList.remove('primary');
+  scanBtn.classList.add('secondary');
+  // Networks are now scanned only when scan button is clicked
+  scanNetworks();
+  connectedBtn.classList.remove('secondary');
+  connectedBtn.classList.add('primary');
+  scanBtn.classList.remove('secondary');
+  scanBtn.classList.add('primary');
+
+  // Function to show connected network
+  async function showConnectedNetwork() {
+    try {
+      // Show loading indicator
+      loadingIndicator.style.display = 'flex';
+      loadingIndicator.querySelector('p').textContent = 'Getting connected network...';
+      
+      // Show connected container without hiding other containers
+      document.getElementById('connected-container').classList.remove('hidden');
+      
+      // Clear previous results
+      const connectedNetworkDiv = document.getElementById('connected-network');
+      connectedNetworkDiv.innerHTML = '';
+      
+      // Fetch connected network from API
+      const response = await fetch('/api/networks/connected');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to retrieve connected network');
+      }
+      
+      // Hide loading indicator
+      loadingIndicator.style.display = 'none';
+      
+      // Display connected network
+      if (data.connected) {
+        const networkItem = document.createElement('div');
+        networkItem.className = 'network-item';
+        
+        // Create signal strength indicator
+        const signalStrength = getSignalStrengthIcon(data.signal);
+        
+        networkItem.innerHTML = `
+          <h3>${data.ssid} ${signalStrength}</h3>
+          <div class="network-details">
+            <span class="network-detail">Signal: ${data.signal}%</span>
+            <span class="network-detail">Security: ${data.security}</span>
+            <span class="network-detail">Encryption: ${data.encryption}</span>
+            <span class="network-detail">State: ${data.state}</span>
+          </div>
+        `;
+        
+        connectedNetworkDiv.appendChild(networkItem);
+      } else {
+        connectedNetworkDiv.innerHTML = '<p>Not connected to any network</p>';
+      }
+    } catch (error) {
+      console.error('Error getting connected network:', error);
+      loadingIndicator.style.display = 'none';
+      
+      // Display error message
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'error-message';
+      errorMessage.textContent = error.message || 'Failed to get connected network';
+      
+      document.getElementById('connected-network').innerHTML = '';
+      document.getElementById('connected-network').appendChild(errorMessage);
+    }
+  }
   
   // Function to scan for available networks
   async function scanNetworks() {
@@ -58,9 +134,10 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingIndicator.style.display = 'flex';
       loadingIndicator.querySelector('p').textContent = 'Scanning for networks...';
       
-      // Show networks container, hide profiles container
+      // Show networks container, keep connected container visible
       networksContainer.classList.remove('hidden');
       profilesContainer.classList.add('hidden');
+      document.getElementById('connected-container').classList.remove('hidden');
       
       // Clear previous results
       networksList.innerHTML = '';
@@ -120,9 +197,10 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingIndicator.style.display = 'flex';
       loadingIndicator.querySelector('p').textContent = 'Loading saved profiles...';
       
-      // Show profiles container, hide networks container
+      // Show profiles container, keep connected container visible
       profilesContainer.classList.remove('hidden');
       networksContainer.classList.add('hidden');
+      document.getElementById('connected-container').classList.remove('hidden');
       
       // Clear previous results
       profilesList.innerHTML = '';
@@ -315,6 +393,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // Automatically scan for networks when the page loads
-  scanNetworks();
+  // Networks are now scanned automatically with showConnectedNetwork
 });

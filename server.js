@@ -165,6 +165,43 @@ app.post('/api/profiles/usjnet/configure', (req, res) => {
   });
 });
 
+// API endpoint to get currently connected WiFi network
+app.get('/api/networks/connected', (req, res) => {
+  exec('netsh wlan show interfaces', (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error executing command: ${error}`);
+      return res.status(500).json({ error: 'Failed to retrieve connected network information' });
+    }
+    
+    if (stderr) {
+      console.error(`Command stderr: ${stderr}`);
+      return res.status(500).json({ error: 'Error in command execution' });
+    }
+    
+    // Parse the output to extract connected network information
+    const ssidMatch = stdout.match(/SSID\s+: (.+)/)
+    const signalMatch = stdout.match(/Signal\s+: (\d+)%/);
+    const authMatch = stdout.match(/Authentication\s+: (.+)/)
+    const encryptionMatch = stdout.match(/Cipher\s+: (.+)/)
+    const stateMatch = stdout.match(/State\s+: (.+)/)
+    
+    if (!ssidMatch) {
+      return res.json({ connected: false });
+    }
+    
+    const networkInfo = {
+      connected: true,
+      ssid: ssidMatch[1].trim(),
+      signal: signalMatch ? parseInt(signalMatch[1]) : 0,
+      security: authMatch ? authMatch[1].trim() : 'Unknown',
+      encryption: encryptionMatch ? encryptionMatch[1].trim() : 'Unknown',
+      state: stateMatch ? stateMatch[1].trim() : 'Unknown'
+    };
+    
+    res.json(networkInfo);
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
