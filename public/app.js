@@ -88,28 +88,22 @@ document.addEventListener('DOMContentLoaded', () => {
   resetButtonStates();
   connectedBtn.classList.remove('secondary');
   connectedBtn.classList.add('primary');
-  scanBtn.classList.remove('primary');
-  scanBtn.classList.add('secondary');
-  // Networks are now scanned only when scan button is clicked
-  scanNetworks();
-  connectedBtn.classList.remove('secondary');
-  connectedBtn.classList.add('primary');
-  scanBtn.classList.remove('secondary');
-  scanBtn.classList.add('primary');
 
   // Function to show connected network
   async function showConnectedNetwork() {
     try {
+      // Hide all containers
+      document.querySelectorAll('.results-container > div').forEach(container => {
+        container.classList.add('hidden');
+      });
+      // Show only connected container
+      document.getElementById('connected-container').classList.remove('hidden');
       networksContainer.classList.add('hidden');
       profilesContainer.classList.add('hidden');
-      document.getElementById('connected-container').classList.remove('hidden');
       
       // Show loading indicator
       loadingIndicator.style.display = 'flex';
       loadingIndicator.querySelector('p').textContent = 'Getting connected network...';
-      
-      // Show connected container without hiding other containers
-      document.getElementById('connected-container').classList.remove('hidden');
       
       // Clear previous results
       const connectedNetworkDiv = document.getElementById('connected-network');
@@ -197,10 +191,11 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingIndicator.style.display = 'flex';
       loadingIndicator.querySelector('p').textContent = 'Scanning for networks...';
       
-      // Show networks container, keep connected container visible
+      // Show only networks container
+      document.querySelectorAll('.results-container > div').forEach(container => {
+        container.classList.add('hidden');
+      });
       networksContainer.classList.remove('hidden');
-      profilesContainer.classList.add('hidden');
-      document.getElementById('connected-container').classList.remove('hidden');
       
       // Clear previous results
       networksList.innerHTML = '';
@@ -303,10 +298,11 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingIndicator.style.display = 'flex';
       loadingIndicator.querySelector('p').textContent = 'Loading saved profiles...';
       
-      // Show profiles container, keep connected container visible
+      // Show only profiles container
+      document.querySelectorAll('.results-container > div').forEach(container => {
+        container.classList.add('hidden');
+      });
       profilesContainer.classList.remove('hidden');
-      networksContainer.classList.add('hidden');
-      document.getElementById('connected-container').classList.remove('hidden');
       
       // Clear previous results
       profilesList.innerHTML = '';
@@ -365,9 +361,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // Function to show profile details
+  // Function to show/hide profile details
   async function showProfileDetails(profileName) {
     const detailsContainer = document.getElementById(`details-${profileName}`);
+    
+    // If details are already loaded and visible, hide them
+    if (detailsContainer.innerHTML && detailsContainer.style.display !== 'none') {
+      detailsContainer.style.display = 'none';
+      return;
+    }
+    
+    // Show the container if it was hidden
+    detailsContainer.style.display = 'block';
+    
+    // If details are already loaded, no need to fetch again
+    if (detailsContainer.innerHTML && !detailsContainer.querySelector('.loading-details') && !detailsContainer.querySelector('.error-message')) {
+      return;
+    }
     
     try {
       // Show loading state

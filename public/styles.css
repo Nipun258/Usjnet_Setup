@@ -286,6 +286,24 @@ header h1 {
   color: white;
 }
 
+.connect-btn {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.connect-btn:hover {
+  background-color: #27ae60;
+}
+
+.disconnect-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.disconnect-btn:hover {
+  background-color: #c0392b;
+}
+
 @keyframes slideIn {
   from {
     transform: translateX(100%);
