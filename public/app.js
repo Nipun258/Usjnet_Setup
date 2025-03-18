@@ -8,6 +8,43 @@ document.addEventListener('DOMContentLoaded', () => {
   const profilesContainer = document.getElementById('profiles-container');
   const networksList = document.getElementById('networks-list');
   const profilesList = document.getElementById('profiles-list');
+  const toastContainer = document.querySelector('.toast-container');
+
+  // Toast notification function
+  function showToast(message, type = 'success', actions = null) {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.textContent = message;
+    toast.appendChild(messageDiv);
+    
+    if (actions) {
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'toast-actions';
+      
+      Object.entries(actions).forEach(([label, callback]) => {
+        const button = document.createElement('button');
+        button.textContent = label;
+        button.className = 'toast-action-btn';
+        button.onclick = () => {
+          callback();
+          toast.style.animation = 'slideIn 0.3s ease-in-out reverse';
+          setTimeout(() => toast.remove(), 300);
+        };
+        actionsDiv.appendChild(button);
+      });
+      
+      toast.appendChild(actionsDiv);
+    } else {
+      setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s ease-in-out reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+    
+    toastContainer.appendChild(toast);
+  }
   
   // Event Listeners
   scanBtn.addEventListener('click', scanNetworks);
@@ -200,28 +237,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Function to delete profile
+  // Function to delete profile
   async function deleteProfile(profileName) {
-    if (!confirm(`Are you sure you want to delete the profile "${profileName}"?`)) {
-      return;
-    }
-    
-    try {
-      const response = await fetch(`/api/profiles/${encodeURIComponent(profileName)}`, {
-        method: 'DELETE'
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete profile');
-      }
-      
-      // Refresh profiles list
-      showProfiles();
-    } catch (error) {
-      console.error('Error deleting profile:', error);
-      alert(error.message || 'Failed to delete profile');
-    }
+    showToast(`Are you sure you want to delete the profile "${profileName}"?`, 'warning', {
+      'Confirm': async () => {
+        try {
+          const response = await fetch(`/api/profiles/${encodeURIComponent(profileName)}`, {
+            method: 'DELETE'
+          });
+          
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to delete profile');
+          }
+          
+          showToast(`Profile "${profileName}" has been deleted`, 'success');
+          showProfiles();
+        } catch (error) {
+          console.error('Error deleting profile:', error);
+          showToast(error.message || 'Failed to delete profile', 'error');
+        }
+      },
+      'Cancel': () => {}
+    });
   }
   
   // Function to generate signal strength icon based on percentage
@@ -266,14 +304,14 @@ document.addEventListener('DOMContentLoaded', () => {
       loadingIndicator.style.display = 'none';
       
       // Show success message
-      alert('USJNet profile configured successfully!');
+      showToast('USJNet profile configured successfully!');
       
       // Refresh profiles list
       showProfiles();
     } catch (error) {
       console.error('Error configuring USJNet profile:', error);
       loadingIndicator.style.display = 'none';
-      alert(error.message || 'Failed to configure USJNet profile');
+      showToast(error.message || 'Failed to configure USJNet profile', 'error');
     }
   }
   
