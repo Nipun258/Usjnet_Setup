@@ -10,6 +10,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const networksList = document.getElementById('networks-list');
   const profilesList = document.getElementById('profiles-list');
   const toastContainer = document.querySelector('.toast-container');
+  const connectedContainer = document.getElementById('connected-container');
+
+  // Hide all containers except connected container
+  networksContainer.classList.add('hidden');
+  profilesContainer.classList.add('hidden');
+  connectedContainer.classList.remove('hidden');
+  
+  // Show connected network on initial load
+  showConnectedNetwork();
+  resetButtonStates();
+  connectedBtn.classList.remove('secondary');
+  connectedBtn.classList.add('primary');
 
   // Toast notification function
   function showToast(message, type = 'success', actions = null) {
@@ -82,12 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.add('secondary');
     });
   }
-
-  // Show connected network on initial load
-  showConnectedNetwork();
-  resetButtonStates();
-  connectedBtn.classList.remove('secondary');
-  connectedBtn.classList.add('primary');
 
   // Function to show connected network
   async function showConnectedNetwork() {
